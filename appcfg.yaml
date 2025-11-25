@@ -1,0 +1,17 @@
+##################################
+# Python App Packer
+# author: wel2018
+# date: 2025-11-25
+##################################
+
+# 热重载
+HOTRELOAD: 0
+
+# 详细日志
+VERBOSE: 1
+
+# debugpy 线程调试模式
+THREAD_DEBUG: 0
+
+# 性能测试
+BENCHMARK: 0
