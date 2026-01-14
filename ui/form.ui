@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>647</width>
-    <height>405</height>
+    <width>882</width>
+    <height>433</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,20 +16,20 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <layout class="QVBoxLayout" name="verticalLayout">
+     <layout class="QVBoxLayout" name="verticalLayout_3">
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
         <item>
          <widget class="QLabel" name="label_5">
           <property name="text">
-           <string>模块路径</string>
+           <string>项目根路径</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="dataset_zip_path">
+         <widget class="QLineEdit" name="root_path">
           <property name="text">
-           <string>D:\wk\Codehub\0\phimate\projects</string>
+           <string>D:\wk\Codehub\0\phimate</string>
           </property>
           <property name="clearButtonEnabled">
            <bool>true</bool>
@@ -37,118 +37,174 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="dataset_zip_path_select">
+         <widget class="QPushButton" name="btn_root_select">
           <property name="text">
            <string>选择</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_2">
+         <widget class="QPushButton" name="btn_scan">
           <property name="text">
-           <string>模块名</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="model_weight_dir">
-          <property name="text">
-           <string>realman_teleop</string>
-          </property>
-          <property name="clearButtonEnabled">
-           <bool>true</bool>
+           <string>搜索模块</string>
           </property>
          </widget>
         </item>
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_3">
-        <item>
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>导出路径</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="dataset_data_yaml_path">
-          <property name="text">
-           <string>dist/dist_${TARGET_MODULE}_`date &quot;+%Y-%m-%d-%H.%M.%S&quot;`</string>
-          </property>
-          <property name="clearButtonEnabled">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="2,1">
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>模块列表</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTableWidget" name="table_mod"/>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <item>
            <layout class="QHBoxLayout" name="horizontalLayout">
             <item>
-             <widget class="QLabel" name="label_3">
+             <widget class="QLabel" name="label_4">
               <property name="text">
-               <string>拷贝文件</string>
+               <string>包名</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit"/>
+             <widget class="QLineEdit" name="mod_name"/>
             </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_5">
             <item>
-             <widget class="QPushButton" name="pushButton">
+             <widget class="QLabel" name="label">
               <property name="text">
-               <string>添加</string>
+               <string>路径名</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton_2">
+             <widget class="QLineEdit" name="mod_path"/>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_7">
+            <item>
+             <widget class="QLabel" name="label_7">
               <property name="text">
-               <string>删除</string>
+               <string>版本号提升方式</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_update_major">
+              <property name="text">
+               <string>大版本</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_update_minor">
+              <property name="text">
+               <string>中版本</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_update_patch">
+              <property name="text">
+               <string>小版本</string>
               </property>
              </widget>
             </item>
            </layout>
           </item>
           <item>
-           <widget class="QListWidget" name="listWidget">
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
             <item>
-             <property name="text">
-              <string>appcfg.yaml</string>
-             </property>
+             <widget class="QLabel" name="label_3">
+              <property name="text">
+               <string>版本号</string>
+              </property>
+             </widget>
             </item>
-           </widget>
+            <item>
+             <widget class="QLineEdit" name="mod_version"/>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_update_version">
+              <property name="text">
+               <string>更新</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
-           <widget class="QTextBrowser" name="textBrowser"/>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <item>
-           <widget class="QCommandLinkButton" name="btn_train">
+           <widget class="QLabel" name="label_8">
             <property name="text">
-             <string>开始打包</string>
+             <string>功能</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QCommandLinkButton" name="btn_pause">
-            <property name="text">
-             <string>暂停任务</string>
-            </property>
-           </widget>
+           <layout class="QHBoxLayout" name="horizontalLayout_8">
+            <item>
+             <widget class="QPushButton" name="btn_release">
+              <property name="text">
+               <string>发布包</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_zip">
+              <property name="text">
+               <string>压缩发布包</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
-           <widget class="QCommandLinkButton" name="btn_stop">
+           <layout class="QHBoxLayout" name="horizontalLayout_9">
+            <item>
+             <widget class="QPushButton" name="pushButton_7">
+              <property name="text">
+               <string>-</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_8">
+              <property name="text">
+               <string>-</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_9">
+              <property name="text">
+               <string>-</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="is_delete_zipped_folder">
             <property name="text">
-             <string>放弃任务</string>
+             <string>压缩后删除文件夹</string>
             </property>
            </widget>
           </item>
