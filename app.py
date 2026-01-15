@@ -33,6 +33,7 @@ class PackerApp(qtbase.QApp):
         qtbase.bind_clicked(ui.btn_update_patch, self.on_bump_patch)
         qtbase.bind_clicked(ui.btn_release, self.on_release)
         qtbase.bind_clicked(ui.btn_zip, self.on_zip)
+        qtbase.bind_clicked(ui.btn_open_dist_dir, self.on_open_dist_dir)
 
         # 配置模块列表表头（包名 / 路径 / 完整版本号 / 更新时间），路径列隐藏，仅内部使用
         table = ui.table_mod
@@ -523,6 +524,47 @@ class PackerApp(qtbase.QApp):
                 self,
                 "错误",
                 f"压缩发布包失败：\n{zip_path}\n\n{e}",
+            )
+
+    # ---------- 打开发布目录 ----------
+    def on_open_dist_dir(self):
+        """
+        打开最近一次 on_release 生成的发布目录
+        """
+        output_root = getattr(self, "last_output_root", None)
+        if not output_root:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "提示",
+                "请先点击“发布包”完成一次发布，再打开发布目录。",
+            )
+            return
+
+        if not os.path.isdir(output_root):
+            QtWidgets.QMessageBox.warning(
+                self,
+                "提示",
+                f"发布目录不存在：\n{output_root}",
+            )
+            return
+
+        try:
+            # Windows 使用 explorer，Linux/Mac 使用 xdg-open/open
+            if sys.platform == "win32":
+                os.startfile(output_root)
+            elif sys.platform == "darwin":
+                import subprocess
+                subprocess.Popen(["open", output_root])
+            else:
+                import subprocess
+                subprocess.Popen(["xdg-open", output_root])
+            logger.info(f"已打开发布目录：{output_root}")
+        except Exception as e:  # noqa: BLE001
+            logger.exception(f"打开发布目录失败: dir={output_root}, err={e}")
+            QtWidgets.QMessageBox.critical(
+                self,
+                "错误",
+                f"打开发布目录失败：\n{output_root}\n\n{e}",
             )
 
     # ---------- 更新版本号 ----------

@@ -174,14 +174,21 @@
               </property>
              </widget>
             </item>
+            <item>
+             <widget class="QCheckBox" name="is_delete_zipped_folder">
+              <property name="text">
+               <string>压缩后删除文件夹</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_9">
             <item>
-             <widget class="QPushButton" name="pushButton_7">
+             <widget class="QPushButton" name="btn_open_dist_dir">
               <property name="text">
-               <string>-</string>
+               <string>打开发布目录</string>
               </property>
              </widget>
             </item>
@@ -200,13 +207,6 @@
              </widget>
             </item>
            </layout>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="is_delete_zipped_folder">
-            <property name="text">
-             <string>压缩后删除文件夹</string>
-            </property>
-           </widget>
           </item>
           <item>
            <spacer name="verticalSpacer">
