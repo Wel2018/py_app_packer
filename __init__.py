@@ -17,3 +17,4 @@ q_appcfg = qtbase.QAppConfig(
 )
 
 ROOT = q_appcfg.ROOT
+APPCFG = q_appcfg.APPCFG_DICT

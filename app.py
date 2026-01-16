@@ -2,7 +2,7 @@ import sys
 from .ui.ui_form import Ui_MainWindow
 from toolbox.qt import qtbase_future as qtbase
 from toolbox.core.log import LogHelper, printc
-from . import q_appcfg
+from . import q_appcfg, APPCFG
 from loguru import logger
 from PySide6 import QtWidgets
 from datetime import date, datetime
@@ -35,17 +35,19 @@ class PackerApp(qtbase.QApp):
         qtbase.bind_clicked(ui.btn_zip, self.on_zip)
         qtbase.bind_clicked(ui.btn_open_dist_dir, self.on_open_dist_dir)
 
-        # 配置模块列表表头（包名 / 路径 / 完整版本号 / 更新时间），路径列隐藏，仅内部使用
+        # 配置模块列表表头（图标 / 包名 / 路径 / 完整版本号 / 更新时间），路径列隐藏，仅内部使用
         table = ui.table_mod
-        table.setColumnCount(4)
-        table.setHorizontalHeaderLabels(["包名", "路径", "版本号", "更新时间"])
+        table.setColumnCount(5)
+        table.setHorizontalHeaderLabels(["", "包名", "路径", "版本号", "更新时间"])
         header = table.horizontalHeader()
-        # 第一列（包名）按内容自适应宽度，第三列（版本号）按内容，第四列（更新时间）占用剩余空间
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        # 第一列（图标）固定宽度，第二列（包名）按内容自适应宽度，第四列（版本号）按内容，第五列（更新时间）占用剩余空间
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(0, 30)  # 图标列宽度设为30
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.Stretch)
-        table.setColumnHidden(1, True)
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        table.setColumnHidden(2, True)  # 路径列隐藏
         table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         table.itemSelectionChanged.connect(self.on_mod_selected)
@@ -53,18 +55,43 @@ class PackerApp(qtbase.QApp):
         self.ui.btn_scan.click()
 
     def _scan_packages(self, root_path: str):
-        """扫描 root_path 下所有包含 __init__.py 和 __main__.py 的包"""
-        packages: list[tuple[str, str]] = []
+        """
+        扫描 root_path 下第一层级子文件夹中包含 __init__.py 的包（不递归，排除 tests）
+        返回: list[tuple[str, str, str]]，每个元素为 (包名, 路径, 类型)
+        类型: 'runnable' 表示可运行模块（同时有 __init__.py 和 __main__.py），'normal' 表示普通模块（只有 __init__.py）
+        """
+        packages: list[tuple[str, str, str]] = []
         root_path = os.path.abspath(root_path)
 
-        for dirpath, _, filenames in os.walk(root_path):
-            if "__init__.py" in filenames and "__main__.py" in filenames:
-                rel = os.path.relpath(dirpath, root_path)
-                if rel == ".":
-                    pkg_name = os.path.basename(root_path)
-                else:
-                    pkg_name = rel.replace(os.sep, ".")
-                packages.append((pkg_name, dirpath))
+        # 只遍历第一层级的子文件夹，不递归
+        try:
+            entries = os.listdir(root_path)
+        except OSError:
+            return packages
+
+        for entry in entries:
+            # 排除 tests 文件夹
+            if entry.lower() == "tests":
+                continue
+            
+            dirpath = os.path.join(root_path, entry)
+            # 只处理文件夹
+            if not os.path.isdir(dirpath):
+                continue
+            
+            # 检查该文件夹中是否有 __init__.py
+            init_file = os.path.join(dirpath, "__init__.py")
+            if not os.path.isfile(init_file):
+                continue
+            
+            # 获取包名（文件夹名）
+            pkg_name = entry
+            
+            # 判断类型：同时有 __main__.py 则为可运行模块，否则为普通模块
+            main_file = os.path.join(dirpath, "__main__.py")
+            pkg_type = "runnable" if os.path.isfile(main_file) else "normal"
+            
+            packages.append((pkg_name, dirpath, pkg_type))
 
         return packages
 
@@ -85,8 +112,8 @@ class PackerApp(qtbase.QApp):
     def _get_row_info(self, row: int):
         """根据行号获取 (包名, 路径)，任一为空则返回 (None, None)"""
         table = self.ui.table_mod
-        name_item = table.item(row, 0)
-        path_item = table.item(row, 1)
+        name_item = table.item(row, 1)  # 包名列现在是第2列（索引1）
+        path_item = table.item(row, 2)  # 路径列现在是第3列（索引2）
         if not name_item or not path_item:
             return None, None
         pkg_name = name_item.text().strip()
@@ -176,10 +203,10 @@ class PackerApp(qtbase.QApp):
         base_version, _ = self._split_version(full_version)
         ui.mod_version.setText(base_version)
 
-        # 更新表格中对应行的“版本号”列
+        # 更新表格中对应行的"版本号"列
         table = ui.table_mod
-        table.setItem(row, 2, QtWidgets.QTableWidgetItem(full_version))
-        table.setItem(row, 3, QtWidgets.QTableWidgetItem(ts or ""))
+        table.setItem(row, 3, QtWidgets.QTableWidgetItem(full_version))  # 版本号列现在是第4列（索引3）
+        table.setItem(row, 4, QtWidgets.QTableWidgetItem(ts or ""))  # 更新时间列现在是第5列（索引4）
 
     def on_scan(self):
         ui = self.ui
@@ -196,16 +223,54 @@ class PackerApp(qtbase.QApp):
         table = ui.table_mod
         table.setRowCount(0)
 
-        for row, (pkg_name, pkg_path) in enumerate(packages):
+        # 获取图标路径：尝试从当前文件位置推断仓库根目录
+        # 当前文件路径：projects/py_app_packer/app.py，向上两级到仓库根
+        current_file_dir = os.path.dirname(os.path.abspath(__file__))
+        repo_root = os.path.dirname(os.path.dirname(current_file_dir))
+        icon_play = os.path.join(repo_root, "data", "assets", "play.svg")
+        # 创建普通模块图标（文件夹图标）的 SVG 字符串
+        icon_folder_svg = """<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M4 5h6l2 2h8a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" stroke="#666666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>"""
+
+        for row, (pkg_name, pkg_path, pkg_type) in enumerate(packages):
             table.insertRow(row)
-            table.setItem(row, 0, QtWidgets.QTableWidgetItem(pkg_name))
-            table.setItem(row, 1, QtWidgets.QTableWidgetItem(pkg_path))
+            
+            # 第一列：图标
+            icon_item = QtWidgets.QTableWidgetItem()
+            if pkg_type == "runnable":
+                # 可运行模块：使用 play.svg
+                if os.path.exists(icon_play):
+                    icon = qtbase.get_icon(icon_play, 20)
+                    icon_item.setIcon(icon)
+            else:
+                # 普通模块：使用文件夹图标（从 SVG 字符串创建）
+                try:
+                    from PySide6.QtGui import QIcon, QPixmap
+                    from PySide6.QtCore import QByteArray, Qt
+                    svg_bytes = QByteArray(icon_folder_svg.encode('utf-8'))
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(svg_bytes, format='SVG')  # type: ignore
+                    if pixmap.size().width() > 0:
+                        pixmap = pixmap.scaled(20, 20, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                        icon = QIcon(pixmap)
+                        icon_item.setIcon(icon)
+                except Exception:  # noqa: BLE001
+                    pass  # 如果图标加载失败，继续执行
+            table.setItem(row, 0, icon_item)
+            
+            # 第二列：包名
+            table.setItem(row, 1, QtWidgets.QTableWidgetItem(pkg_name))
+            # 第三列：路径（隐藏）
+            table.setItem(row, 2, QtWidgets.QTableWidgetItem(pkg_path))
 
             # 尝试读取现有版本信息（不在这里强制创建文件）
             version_file = self._version_file_path(pkg_path)
             full_version, ts = self._read_version_info(version_file)
-            table.setItem(row, 2, QtWidgets.QTableWidgetItem(full_version or ""))
-            table.setItem(row, 3, QtWidgets.QTableWidgetItem(ts or ""))
+            # 第四列：版本号
+            table.setItem(row, 3, QtWidgets.QTableWidgetItem(full_version or ""))
+            # 第五列：更新时间
+            table.setItem(row, 4, QtWidgets.QTableWidgetItem(ts or ""))
 
         ui.statusbar.showMessage(f"共找到 {len(packages)} 个可打包模块。", 5000)
         ui.mod_name.clear()
@@ -278,20 +343,23 @@ class PackerApp(qtbase.QApp):
             return
 
         # TARGET 为项目名（如 realman_teleop）
-        target = os.path.basename(pkg_path)
+        pkg_name = os.path.basename(pkg_path)
 
         # 仓库根目录（与示例脚本中相同，相对路径以此为基准）
         #repo_root = "" # q_appcfg.ROOT
-        repo_root = os.path.abspath("D:\\wk\\Codehub\\0\\phimate")  # 改为你的 phimate 绝对路径
+        # repo_root = os.path.abspath("D:\\wk\\Codehub\\0\\phimate")  # 改为你的 phimate 绝对路径
 
         # OUTPUT=dist/dist_${TARGET}_`date "+%Y-%m-%d-%H.%M.%S"`
         ts = datetime.now().strftime("%Y-%m-%d-%H.%M.%S")
-        output_dir_name = f"dist_{target}_{ts}"
+        output_dir_name = f"dist_{pkg_name}_{ts}"
+        # input_path = os.path.normpath(os.path.join(repo_root, f"projects\\{target}"))  # 用 \\ 替代 /
+        input_path = self.ui.root_path.text()
+        pkg_full_name = os.path.normpath(os.path.join(input_path, pkg_name))  # 用 \\ 替代 /
+        repo_root = os.path.dirname(input_path)
         output_root = os.path.join(repo_root, "dist", output_dir_name)
-        input_path = os.path.normpath(os.path.join(repo_root, f"projects\\{target}"))  # 用 \\ 替代 /
 
         # 日志提示
-        msg1 = f"加密模块 {target} 到输出目录 {output_root}"
+        msg1 = f"加密模块 {pkg_name} 到输出目录 {output_root}"
         msg2 = "注：忽略 ERROR out of license，不影响程序运行"
         logger.info(msg1)
         logger.info(msg2)
@@ -327,15 +395,20 @@ class PackerApp(qtbase.QApp):
             cmd = [
                 # "pyarmor",
                 pyarmor_path,
-                "--silent",
+                # "--silent"
                 "gen",
                 "-O",
                 output_root,
                 "-r",
                 "-i",
-                input_path
+                pkg_full_name
                 # f"projects/{target}",
             ]
+
+            if APPCFG['is_pyarmor_silent']:
+                printc("pyarmor 安静模式", 'warn')
+                cmd.insert(1, "--silent")
+
             logger.info(f"运行命令: {' '.join(cmd)}  (cwd={repo_root})")
             proc = subprocess.Popen(
                 cmd,
@@ -371,7 +444,7 @@ class PackerApp(qtbase.QApp):
                 logger.info(f"pyarmor 执行成功。\nstdout:\n{out}")
 
         except Exception as e:  # noqa: BLE001
-            logger.exception(f"执行 pyarmor 过程异常: target={target}, err={e}")
+            logger.exception(f"执行 pyarmor 过程异常: pkg_name={pkg_name}, err={e}")
             QtWidgets.QMessageBox.critical(
                 self,
                 "错误",
@@ -380,17 +453,17 @@ class PackerApp(qtbase.QApp):
             return
 
         # 2) 拷贝配置文件
-        try:
-            logger.info("拷贝配置文件...")
-            src_appcfg = os.path.join(repo_root, "projects", target, "appcfg.yaml")
-            dst_target_root = os.path.join(output_root, target)
-            os.makedirs(dst_target_root, exist_ok=True)
-            if os.path.isfile(src_appcfg):
-                shutil.copy2(src_appcfg, os.path.join(dst_target_root, "appcfg.yaml"))
-            else:
-                logger.warning(f"未找到配置文件: {src_appcfg}")
-        except Exception as e:  # noqa: BLE001
-            logger.exception(f"拷贝配置文件失败: target={target}, err={e}")
+        # try:
+        #     logger.info("拷贝配置文件...")
+        #     src_appcfg = os.path.join(repo_root, "projects", target, "appcfg.yaml")
+        #     dst_target_root = os.path.join(output_root, target)
+        #     os.makedirs(dst_target_root, exist_ok=True)
+        #     if os.path.isfile(src_appcfg):
+        #         shutil.copy2(src_appcfg, os.path.join(dst_target_root, "appcfg.yaml"))
+        #     else:
+        #         logger.warning(f"未找到配置文件: {src_appcfg}")
+        # except Exception as e:  # noqa: BLE001
+        #     logger.exception(f"拷贝配置文件失败: target={target}, err={e}")
 
         # 3) 拷贝机械臂依赖库：projects/${TARGET}/bgtask/common -> ${OUTPUT}/${TARGET}/bgtask/common
         # try:
@@ -410,7 +483,7 @@ class PackerApp(qtbase.QApp):
         # 3) 拷贝映射文件指定的内容（例如：bgtask/common、appcfg.yaml 等）
         try:
             logger.info("拷贝映射文件指定的内容...")
-            mapp_path = os.path.join(repo_root, "projects", target, "mapp.txt")
+            mapp_path = os.path.join(pkg_full_name, "mapp.txt")
             if not os.path.isfile(mapp_path):
                 logger.warning(f"未找到 mapp.txt 映射文件：{mapp_path}")
             else:
@@ -423,8 +496,8 @@ class PackerApp(qtbase.QApp):
 
                         # 相对路径，如 'bgtask/common' 或 'appcfg.yaml'
                         rel_path = line.replace("\\", "/")
-                        src_path = os.path.join(repo_root, "projects", target, rel_path)
-                        dst_path = os.path.join(output_root, target, rel_path)
+                        src_path = os.path.join(input_path, pkg_name, rel_path)
+                        dst_path = os.path.join(output_root, pkg_name, rel_path)
 
                         if os.path.isdir(src_path):
                             # 目录拷贝
@@ -440,26 +513,26 @@ class PackerApp(qtbase.QApp):
                             logger.warning(f"mapp.txt 中的路径不存在，已跳过: {src_path}")
 
         except Exception as e:  # noqa: BLE001
-            logger.exception(f"拷贝映射文件指定的内容失败: target={target}, err={e}")
+            logger.exception(f"拷贝映射文件指定的内容失败: target={pkg_name}, err={e}")
 
-        # 4) 拷贝界面描述：projects/${TARGET}/ui -> ${OUTPUT}/${TARGET}/ui
-        try:
-            logger.info("拷贝界面描述...")
-            src_ui = os.path.join(repo_root, "projects", target, "ui")
-            dst_ui = os.path.join(output_root, target, "ui")
-            if os.path.isdir(src_ui):
-                shutil.copytree(src_ui, dst_ui, dirs_exist_ok=True)
-            else:
-                logger.warning(f"未找到界面描述目录: {src_ui}")
-        except Exception as e:  # noqa: BLE001
-            logger.exception(f"拷贝界面描述失败: target={target}, err={e}")
+        # 4) 拷贝界面描述：projects/${pkg_name}/ui -> ${OUTPUT}/${pkg_name}/ui
+        # try:
+        #     logger.info("拷贝界面描述...")
+        #     src_ui = os.path.join(input_path, pkg_name, "ui")
+        #     dst_ui = os.path.join(output_root, pkg_name, "ui")
+        #     if os.path.isdir(src_ui):
+        #         shutil.copytree(src_ui, dst_ui, dirs_exist_ok=True)
+        #     else:
+        #         logger.warning(f"未找到界面描述目录: {src_ui}")
+        # except Exception as e:  # noqa: BLE001
+        #     logger.exception(f"拷贝界面描述失败: pkg_name={pkg_name}, err={e}")
 
         # 记录最近一次发布输出目录和目标名，供压缩使用
         self.last_output_root = output_root
-        self.last_output_target = target
+        self.last_output_pkg_name = pkg_name
 
         # 完成提示
-        done_msg = f"模块 {target} 加密完成！输出目录：\n{output_root}"
+        done_msg = f"模块 {pkg_name} 加密完成！输出目录：\n{output_root}"
         logger.info(done_msg)
         QtWidgets.QMessageBox.information(self, "完成", done_msg)
 
@@ -469,7 +542,7 @@ class PackerApp(qtbase.QApp):
         将最近一次 on_release 生成的发布目录压缩为 zip 文件
         """
         output_root = getattr(self, "last_output_root", None)
-        target = getattr(self, "last_output_target", None)
+        target = getattr(self, "last_output_pkg_name", None)
         if not output_root or not target:
             QtWidgets.QMessageBox.warning(
                 self,
@@ -598,8 +671,8 @@ class PackerApp(qtbase.QApp):
 
         # 更新表格中该行的完整版本号与更新时间
         table = ui.table_mod
-        table.setItem(row, 2, QtWidgets.QTableWidgetItem(full_version))
-        table.setItem(row, 3, QtWidgets.QTableWidgetItem(ts))
+        table.setItem(row, 3, QtWidgets.QTableWidgetItem(full_version))  # 版本号列现在是第4列（索引3）
+        table.setItem(row, 4, QtWidgets.QTableWidgetItem(ts))  # 更新时间列现在是第5列（索引4）
 
         msg = f"模块 {pkg_name} 的版本号已更新为 {full_version}"
         ui.statusbar.showMessage(msg, 5000)

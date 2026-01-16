@@ -15,3 +15,6 @@ THREAD_DEBUG: 0
 
 # 性能测试
 BENCHMARK: 0
+
+# pyarmor 打包是否启用安静模式
+is_pyarmor_silent: 1
