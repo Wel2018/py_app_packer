@@ -12,6 +12,7 @@ import shutil
 
 class PackerApp(qtbase.QApp):
     is_quit_confirm = 0
+    ui_cache = 1
 
     def __init__(self, parent=None):
         super().__init__(Ui_MainWindow(), parent=parent)
